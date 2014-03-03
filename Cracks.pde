@@ -41,39 +41,37 @@ void mouseClicked() {
   currMouseX = mouseX;
   currMouseY = mouseY;
   Crack acrack;
-  acrack = new Crack( 100, 1, 1);
+	println( "clicked at (x,y) (" + currMouseX + "," + currMouseY + ")" );
+	RRect rect = new RRect( new RPoint(0, 0), new RPoint( currMouseX, currMouseY ) );
+	println("rect p0 is (x,y) (" + rect.p0.x + "," + rect.p0.y + ")");
+	println("rect p3 is (x,y) (" + rect.p3.x + "," + rect.p3.y + ")");
+  acrack = new Crack( rect );
   acrack.display();
 }
  
 class Crack {
-  CrackLine acrackLine;
-  CrackLine bcrackLine;
-  CrackLine ccrackLine;
-//this should be a list of crack vectors
-  
-  int len;
-  float cdx;
-  float cdy;
-  
-  Crack(int ilen, float idx, float idy) {
-    len = ilen;
-    cdx = idx;
-    cdy = idy;
-    
-    /*acrackLine = new CrackLine(cdx, cdy, 0, 0, len);
-    CrackPoint acp = acrackLine.randomPointOnLine();
-    bcrackLine = new CrackLine(4, 1, acp.x, acp.y, (len/4));
-    acp = acrackLine.randomPointOnLine();
-    ccrackLine = new CrackLine(1, 4, acp.x, acp.y, (len/4));
-*/
-  
-}
-  
+
+	ArrayList<CrackLine> crackLineList;
+	RRect bCrackRect;
+	final int numCrackLines = 1;
+
+  Crack(RRect bcr) {
+		bCrackRect = bcr;
+		crackLineList = new ArrayList<CrackLine>();
+		createCrackLines();
+	}
+
+	void createCrackLines() {
+	  for( int i = 0; i < numCrackLines; i++ ) {
+			CrackLine cline = new CrackLine(bCrackRect);
+			crackLineList.add( cline );
+		}
+	}
+
   void display() {
-//    acrackLine.display();
-    //draw subline
-//    bcrackLine.display();
-//    ccrackLine.display();
+	  for( int i = 0; i < crackLineList.size(); i++ ) {
+			crackLineList.get(i).display();
+		}
   }
 }
  
@@ -82,16 +80,65 @@ class CrackLine {
   
   
 	ArrayList<RVector> vectorList;
+	ArrayList<RVector> displayList;
 	RRect igrid;
+	int sections = 2;
 
   CrackLine(RRect initial_grid) {
 		igrid = initial_grid;
-		RRect r1 = new RRect( igrid.p0.x, igrid.p1.y, );
-		//create four vectors based on random point in 2 rect
+		//create 2 vectors 
 		//"a crack"
+		vectorList = new ArrayList<RVector>();
+		displayList = new ArrayList<RVector>();
+		makeVectorList();
+		crackVectors();
   }
+	void crackVectors() {
+	  for( int i = 0; i < vectorList.size(); i++ ) {
+			RVector vec = vectorList.get(i);
+			RRect rec = new RRect( vec.p1, vec.p2 );
+			//get random point in rec
+			RPoint rpoint = rec.randPointInRect(); 
+			// add two vectors with points from three vectors we have
+			RVector v1 = new RVector( vec.p1, rpoint ); 
+			RVector v2 = new RVector( rpoint, vec.p2 ); 
+			displayList.add(v1);
+			displayList.add(v2);
+		}
+	}
+
+	void makeVectorList() {
+		ArrayList<RPoint> points = igrid.cvector.sectionify(sections);
+		println("points size is " + points.size() );
+		for(int i = 0; i < points.size() + 1; i++ )  {
+			RVector vec;
+			if( i == 0 ) {
+				RPoint sp1 = igrid.p0;
+				RPoint sp2 = points.get(i);
+				vec = new RVector( sp1, sp2);
+			} else if( i == points.size() ) {
+				RPoint sp1 = points.get(i-1);
+				RPoint sp2 = igrid.p3;
+				vec = new RVector( sp1, sp2);
+			} else {
+				RPoint sp1 = points.get(i);
+				RPoint sp2 = points.get(i + 1);
+				vec = new RVector( sp1, sp2);
+			}
+		  //println("vector p1 points are (x,y) (" + igrid.cvector.p1.x + "," + igrid.cvector.p1.y + ")");
+		  //println("vector p2 points are (x,y) (" + igrid.cvector.p2.x + "," + igrid.cvector.p2.y + ")");
+		  //println(i + " (x,y) (" + cpoint.x + "," + cpoint.y + ")"); 
+			println("points size - " + points.size() + " adding i -" + i);
+			vec.print();
+			vectorList.add(vec);
+		}
+	}
   
   void display() { 
+	  for( int i = 0; i < displayList.size(); i++ ) {
+			RVector dvec = displayList.get(i);
+			line( dvec.p1.x, dvec.p1.y, dvec.p2.x, dvec.p2.y);
+		}
   }
 }
  
@@ -122,91 +169,6 @@ class CrackPoint {
 }*/
 
 
-class RVector {
-
-  RPoint p1;
-  RPoint p2;
-  float slope;
-  float magnitude;
-
-  RVector( RPoint rp1, RPoint rp2) {
-		if( rp1.x + rp1.y >= rp2.x + rp2.y ) {
-			p1 = rp1;
-			p2 = rp2;
-		} else {
-			p1 = rp2;
-			p2 = rp1;
-		}
-    calculateSlope();
-    calculateMagnitude();
-  }
-  
-	ArrayList<RPoint> sectionify(int t) {
-		ArrayList<RPoint> points = new ArrayList<RPoint>();
-		for( int i = 0; i < t; i++ ) {
-			float x = p1.x * (1-t) + p2.x * t;
-			float y = p1.y * (1-t) + p2.y * t; 
-			RPoint r = new RPoint(x, y);
-			points.add(r);
-		}
-	}
-
-  private void calculateMagnitude() {
-    float d = 0;
-    float a = sq( p2.x - p1.x);
-    float b = sq( p2.y - p1.y);
-    magnitude = sqrt(a + b);
-  }
-       
-  private void calculateSlope() {
-    slope = 0;
-    float x = p1.x - p2.x;
-    float y = p1.y - p2.y;
-    slope = y / x;
-  }
-
-  boolean pointIsBetween(RPoint c) {
-    float crossproduct = (c.y - p1.y) * (p2.x - p1.x) - (c.x - p1.x) * (p2.y - p1.y);
-    if(abs(crossproduct) > EPSILON) 
-      return false;   // (or != 0 if using integers)
-
-    float dotproduct = (c.x - p1.x) * (p2.x - p1.x) + (c.y - p1.y)*(p2.y - p1.y);
-    if(dotproduct < 0) 
-      return false;
-
-    float squaredlengthba = (p2.x - p1.x)*(p2.x - p1.x) + (p2.y - p1.y)*(p2.y - p1.y);
-    if(dotproduct > squaredlengthba )
-      return false;
-
-    return true;
-  }
-
-  /*CrackPoint randomPointOnLine() {
-    
-    float rand_l = random(len);
-    float rand_x;
-    float rand_y;
-    if ( x_mult >= y_mult) {
-      rand_x = rand_l;
-      rand_y = (rand_x * x_mult) / y_mult;
-      //float rand_y = rand_x * ( x_mult / y_mult);
-    }
-    else {
-      rand_y = rand_l;
-      rand_x = (rand_y * y_mult) / x_mult;
-    }
-    float real_x = rand_x + x_start;
-    float real_y = rand_y + y_start;
-    //these are reversed because we solved for each.
-    println("(rx, ry) -> (" + real_x + ", " + real_y + ")" );
-    acp = new CrackPoint( int(real_x), int(real_y));
-    return acp;
-  }*/
-
-	void display() {
-		line( p1.x, p1.y, p2.x, p2.y);
-	}
-}
 
 //Given a imaginary horizontal line between two points, find the rect
 
@@ -251,6 +213,100 @@ class RRect {
     return new RPoint( rx, ry);
   }
 
+}
+
+class RVector {
+
+  RPoint p1;
+  RPoint p2;
+  float slope;
+  float magnitude;
+
+  RVector( RPoint rp1, RPoint rp2) {
+		if( rp1.x + rp1.y <= rp2.x + rp2.y ) {
+			p1 = rp1;
+			p2 = rp2;
+		} else {
+			p1 = rp2;
+			p2 = rp1;
+		}
+    calculateSlope();
+    calculateMagnitude();
+  }
+  
+	//dividing into 2 means we get a midpoint
+	ArrayList<RPoint> sectionify(int t) {
+		ArrayList<RPoint> points = new ArrayList<RPoint>();
+		for( int i = 0; i < t; i++ ) {
+			float x = p1.x * (i/(1-t)) + p2.x * i/t;
+			float y = p1.y * (i/(1-t)) + p2.y * i/t; 
+			println("sectioned (x,y) (" + x  + "," + y + ")" );
+			RPoint r = new RPoint(x, y);
+			if( i != 0 )
+				points.add(r);
+		}
+		return points;
+	}
+
+  private void calculateMagnitude() {
+    float d = 0;
+    float a = sq( p2.x - p1.x);
+    float b = sq( p2.y - p1.y);
+    magnitude = sqrt(a + b);
+  }
+       
+  private void calculateSlope() {
+    slope = 0;
+    float x = p1.x - p2.x;
+    float y = p1.y - p2.y;
+    slope = y / x;
+  }
+
+  boolean pointIsBetween(RPoint c) {
+    float crossproduct = (c.y - p1.y) * (p2.x - p1.x) - (c.x - p1.x) * (p2.y - p1.y);
+    if(abs(crossproduct) > EPSILON) 
+      return false;   // (or != 0 if using integers)
+
+    float dotproduct = (c.x - p1.x) * (p2.x - p1.x) + (c.y - p1.y)*(p2.y - p1.y);
+    if(dotproduct < 0) 
+      return false;
+
+    float squaredlengthba = (p2.x - p1.x)*(p2.x - p1.x) + (p2.y - p1.y)*(p2.y - p1.y);
+    if(dotproduct > squaredlengthba )
+      return false;
+
+    return true;
+  }
+	void print() { 
+		println( "(x1,y1) (" +  p1.x + "," + p1.y + ")");
+		println( "(x2,y2) (" +  p2.x + "," + p2.y + ")");
+	}
+
+  /*CrackPoint randomPointOnLine() {
+    
+    float rand_l = random(len);
+    float rand_x;
+    float rand_y;
+    if ( x_mult >= y_mult) {
+      rand_x = rand_l;
+      rand_y = (rand_x * x_mult) / y_mult;
+      //float rand_y = rand_x * ( x_mult / y_mult);
+    }
+    else {
+      rand_y = rand_l;
+      rand_x = (rand_y * y_mult) / x_mult;
+    }
+    float real_x = rand_x + x_start;
+    float real_y = rand_y + y_start;
+    //these are reversed because we solved for each.
+    println("(rx, ry) -> (" + real_x + ", " + real_y + ")" );
+    acp = new CrackPoint( int(real_x), int(real_y));
+    return acp;
+  }*/
+
+	void display() {
+		line( p1.x, p1.y, p2.x, p2.y);
+	}
 }
 
 class RPoint {
