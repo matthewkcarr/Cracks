@@ -2,6 +2,8 @@ int currMouseX;
 int currMouseY;
 int x_screen_size = 300;
 int y_screen_size = 300;
+int sectionsPerClick = 2;
+int cracksPerSection = 3;
 
 //to use this look at
 //http://www.processing.org/discourse/beta/num_1233971698.html
@@ -53,7 +55,6 @@ class Crack {
 
 	ArrayList<CrackLine> crackLineList;
 	RRect bCrackRect;
-	final int numCrackLines = 1;
 
   Crack(RRect bcr) {
 		bCrackRect = bcr;
@@ -62,7 +63,7 @@ class Crack {
 	}
 
 	void createCrackLines() {
-	  for( int i = 0; i < numCrackLines; i++ ) {
+	  for( int i = 1; i < sectionsPerClick; i++ ) {
 			CrackLine cline = new CrackLine(bCrackRect);
 			crackLineList.add( cline );
 		}
@@ -82,7 +83,6 @@ class CrackLine {
 	ArrayList<RVector> vectorList;
 	ArrayList<RVector> displayList;
 	RRect igrid;
-	int sections = 2;
 
   CrackLine(RRect initial_grid) {
 		igrid = initial_grid;
@@ -108,7 +108,7 @@ class CrackLine {
 	}
 
 	void makeVectorList() {
-		ArrayList<RPoint> points = igrid.cvector.sectionify(sections);
+		ArrayList<RPoint> points = igrid.cvector.sectionify(cracksPerSection);
 		println("points size is " + points.size() );
 		for(int i = 0; i < points.size() + 1; i++ )  {
 			RVector vec;
@@ -121,8 +121,8 @@ class CrackLine {
 				RPoint sp2 = igrid.p3;
 				vec = new RVector( sp1, sp2);
 			} else {
-				RPoint sp1 = points.get(i);
-				RPoint sp2 = points.get(i + 1);
+				RPoint sp1 = points.get(i - 1);
+				RPoint sp2 = points.get(i);
 				vec = new RVector( sp1, sp2);
 			}
 		  //println("vector p1 points are (x,y) (" + igrid.cvector.p1.x + "," + igrid.cvector.p1.y + ")");
