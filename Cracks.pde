@@ -1,9 +1,9 @@
 int currMouseX;
 int currMouseY;
-int x_screen_size = 300;
-int y_screen_size = 300;
-int sectionsPerClick = 2;
-int cracksPerSection = 3;
+int x_screen_size = 600;
+int y_screen_size = 600;
+int crackLinesPerClick = 3;
+int cracksPerLine = 7;
 
 //to use this look at
 //http://www.processing.org/discourse/beta/num_1233971698.html
@@ -11,7 +11,8 @@ int cracksPerSection = 3;
 static CGeometry Geom = CGeometry.getInstance();
  
 void setup() {
-  background(255);
+  background(0, 0); //255);
+	stroke(255);
   size(x_screen_size, y_screen_size);
   //acrack = new Crack( int(10 + random(100)), 1, 1);
  
@@ -63,7 +64,7 @@ class Crack {
 	}
 
 	void createCrackLines() {
-	  for( int i = 1; i < sectionsPerClick; i++ ) {
+	  for( int i = 0; i < crackLinesPerClick; i++ ) {
 			CrackLine cline = new CrackLine(bCrackRect);
 			crackLineList.add( cline );
 		}
@@ -99,6 +100,8 @@ class CrackLine {
 			RRect rec = new RRect( vec.p1, vec.p2 );
 			//get random point in rec
 			RPoint rpoint = rec.randPointInRect(); 
+			println( "random rect point is ");
+			rpoint.print();  
 			// add two vectors with points from three vectors we have
 			RVector v1 = new RVector( vec.p1, rpoint ); 
 			RVector v2 = new RVector( rpoint, vec.p2 ); 
@@ -108,7 +111,7 @@ class CrackLine {
 	}
 
 	void makeVectorList() {
-		ArrayList<RPoint> points = igrid.cvector.sectionify(cracksPerSection);
+		ArrayList<RPoint> points = igrid.cvector.sectionify(cracksPerLine);
 		println("points size is " + points.size() );
 		for(int i = 0; i < points.size() + 1; i++ )  {
 			RVector vec;
@@ -195,8 +198,8 @@ class RRect {
 
   //Generate other two rectangle points
   void findPoints() {
-    p1 = new RPoint( p0.x + p3.x, p3.y);
-    p2 = new RPoint( p3.x, p0.y + p3.y);
+    p1 = new RPoint( p0.x + p3.x, p0.y);
+    p2 = new RPoint( p0.x, p0.y + p3.y);
   }
 
   boolean pointIsInRect( RPoint np ) {
@@ -208,8 +211,18 @@ class RRect {
   }
   
   RPoint randPointInRect() {
-    float rx = p0.x + random( p3.x );
-    float ry = p0.y + random( p3.y );
+		float rx = 0;
+		float ry = 0;
+		if( p0.x > p3.x ) {
+			rx = p0.x + random( p3.x );
+		} else {
+			rx = p3.x + random( p0.x );
+		}
+		if( p0.y > p3.y ) {
+			ry = p0.y + random( p3.y );
+		} else {
+			ry = p3.y + random( p0.y );
+		}
     return new RPoint( rx, ry);
   }
 
@@ -318,6 +331,9 @@ class RPoint {
     x = nx;
     y = ny;
   }
+	void print() {
+		println("(x,y) (" + x + "," + y + ")");
+	}
 
 }
 
